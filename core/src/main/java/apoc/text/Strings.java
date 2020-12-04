@@ -18,6 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -589,4 +590,14 @@ public class Strings {
         }
         return result.toString();
     }
+    
+    @UserFunction
+    @Description("apoc.text.removeAccents(text) - remove diacritical marks from Latin characters and replace them with letters without the marks")
+    // Taken from: https://www.drillio.com/en/2011/java-remove-accent-diacritic/
+    public static String removeAccents(String text) {
+    return text == null ? null :
+         Normalizer.normalize(text, Form.NFD)
+             .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+    }
+
 }
