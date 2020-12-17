@@ -1,11 +1,13 @@
 [[rename-label-type-property]]
 = Rename
-:description: This section describes procedures that can be used to rename labels, relationship types, and properties of nodes and relationships.
+:description: This section describes the set of Procedures that can be used to rename labels, relationship types, and properties of nodes and relationships.
 
 
 
-Procedures set for renaming labels, relationship types, nodes and relationships' properties.
+These are the set of Procedures for renaming labels, relationship types, nodes and relationships' properties.
 They return the list of eventually impacted constraints and indexes, the user should take care of.
+
+The Procedures can return a number of diffferent values, but the most interesting one used in the examples below are `committedOperations`, which is the number of operations that were actually performed.  See link:https://neo4j.com/developer/graph-model-refactoring]Refactoring[refactoring] for other values returned by these procedures.  Note that the values returned using link:https://neo4j.com/docs/cypher-manual/current/clauses/call/#call-view-the-signature-for-a-procedure[`YIELD`] keyword.
 
 The available procedures are described in the table below:
 
@@ -17,12 +19,12 @@ The available procedures are described in the table below:
 | call apoc.refactor.rename.typeProperty(oldName, newName, [rels], config) | rename all relationship's property from 'oldName' to 'newName'. If 'rels' is provided renaming is applied to this set only
 |===
 
-As the collection of data is processed in batch via `apoc.periodic.iterate` these procedures support the following config parameters:
+As the collection of data is processed in batch via `apoc.periodic.iterate` these procedures support the following `config` parameters:
 
 .Config
 [options=header]
 |===
-| name | type | default | description
+| `config` parameter name | type | default | description
 | batchSize | Long | 10000 | run the specified number of operation statements in a single tx - params: {_count, _batch}
 | parallel | boolean | true | run operation statements in parallel (note that statements might deadlock if conflicting)
 | retries | Long | 0 | if the operation statement fails with an error, sleep 100ms and retry until retries-count is reached - param {_retry}
@@ -71,7 +73,7 @@ image::apoc.rename-initial.png[]
 ----
 MATCH (person:Engineer)
 WHERE person.name IN ["Mark", "Jennifer", "Michael"]
-WITH collect(person) AS people
+WITH collect(person) AS people   // makes a list of people
 CALL apoc.refactor.rename.label("Engineer", "DevRel", people)
 YIELD committedOperations
 RETURN committedOperations
@@ -88,7 +90,7 @@ image::apoc.rename-update-node-labels.png[]
 [source,cypher]
 ----
 MATCH (:Engineer {name: "Jim"})-[rel]->(:Engineer {name: "Alistair"})
-WITH collect(rel) AS rels
+WITH collect(rel) AS rels  // makes a list of relationships
 CALL apoc.refactor.rename.type("COLLEAGUES", "FROLLEAGUES", rels)
 YIELD committedOperations
 RETURN committedOperations
@@ -105,7 +107,7 @@ image::apoc.rename-rename-rel-type.png[]
 [source,cypher]
 ----
 MATCH (person:DevRel)
-WITH collect(person) AS people
+WITH collect(person) AS people  // makes a list of people
 CALL apoc.refactor.rename.nodeProperty("city", "location", people)
 YIELD committedOperations
 RETURN committedOperations
@@ -138,7 +140,7 @@ RETURN (n)
 [source,cypher]
 ----
 MATCH ()-[rel]->()
-WITH collect(rel) AS rels
+WITH collect(rel) AS rels  // makes a list of relationships
 CALL apoc.refactor.rename.typeProperty("since", "from", rels)
 YIELD committedOperations
 RETURN committedOperations
