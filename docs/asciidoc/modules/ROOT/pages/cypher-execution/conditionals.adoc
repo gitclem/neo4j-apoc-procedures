@@ -7,6 +7,9 @@
 Sometimes queries require conditional execution logic that can't be adequately expressed in Cypher.
 The conditional execution procedures simulate an if / else structure, where a supplied boolean condition determines which cypher query is executed.
 
+If the APOC procedure or function name contains `.do.` in the name, then query can be a **write** query.  Otherwise the query must be **read-only**.
+
+
 [[conditionals-overview]]
 == Procedure and Function Overview
 
@@ -37,8 +40,8 @@ include::example$generated-documentation/apoc.do.when-lite.csv[lines=2:]
 ----
 CALL apoc.when(
   condition: Boolean,
-  ifQuery: String,
-  elseQuery: String,
+  ifReadOnlyQuery: String,
+  elseReadOnlyQuery: String,
   params: Map)
 YIELD value
 ----
@@ -63,7 +66,7 @@ WITH collect(distinct a) as aNodes, collect(distinct b) as bNodes
 
 CALL apoc.when(
   size(aNodes) <= size(bNodes),
-  'RETURN aNodes as resultNodes',
+  'RETURN aNodes as resultNodes',  // Read Query
   'RETURN bNodes as resultNodes',
   {aNodes:aNodes, bNodes:bNodes})
 YIELD value
@@ -71,7 +74,7 @@ YIELD value
 RETURN value.resultNodes as resultNodes
 ----
 
-Or, if we wanted to conditionally set or create graph elements if we deem some account to be suspicious, but still want to continue other query operations in either case, we could use `apoc.do.when`:
+Or, if we wanted to use **write** queries to conditionally `SET` or `CREATE`/`MERGE` graph elements if we deem some account to be suspicious, but still want to continue other query operations in either case, we would use `apoc.do.when`:
 
 [source,cypher]
 ----
@@ -81,7 +84,7 @@ WHERE suspect.id in {suspiciousUsersIdList}
 
 CALL apoc.do.when(
   r IS NOT NULL,
-  'SET acc:Suspicious',
+  'SET acc:Suspicious',  // Write Query
   '',
   {acc:acc})
 YIELD value
@@ -128,7 +131,7 @@ If we wanted to MATCH to selection nodes in a column, we could use entirely diff
 ----
 MATCH (me:User {id:$myId})
 CALL apoc.case([
-  $selection = 'friends', "RETURN [(me)-[:FRIENDS]-(friend) | friend] as selection",
+  $selection = 'friends', "RETURN [(me)-[:FRIENDS]-(friend) | friend] as selection",  // Read-Only Query
   $selection = 'coworkers', "RETURN [(me)-[:WORKS_AT*2]-(coworker) | coworker] as selection",
   $selection = 'all', "RETURN apoc.coll.union([(me)-[:FRIENDS]-(friend) | friend], [(me)-[:WORKS_AT*2]-(coworker) | coworker]) as selection"],
   'RETURN [] as selection',
@@ -138,14 +141,14 @@ YIELD value
 RETURN value.selection as selection;
 ----
 
-Or if we want to create different relationship types between two nodes based on the value
+Or if we want to `CREATE`/`MERGE` (a write query) different relationship types between two nodes based on the value
 
 [source,cypher]
 ----
 MATCH (me:User {id:$myId})
 MATCH (friend:User {id:$friendId})
 CALL apoc.do.case([
-  $selection = 'friends', "MERGE (me)-[rel:FRIENDS]->(friend) RETURN rel",
+  $selection = 'friends', "MERGE (me)-[rel:FRIENDS]->(friend) RETURN rel",    // Write Query
   $selection = 'coworkers', "MERGE (me)-[rel:CO_WORKER]->(friend) RETURN rel"],
   'MERGE (me)-[rel:CONNECTED]->(friend) RETURN rel',
   {me:me, friend:friend}
